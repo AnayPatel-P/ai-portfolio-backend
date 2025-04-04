@@ -28,13 +28,17 @@ def optimize(req: OptimizeRequest):
     prices = fetch_price_data(req.tickers)
     result = optimize_portfolio(prices, req.risk_level)
 
-    # Convert price history DataFrame to dict (for JSON serialization)
-    price_history = prices.reset_index()
-    price_history["Date"] = price_history["Date"].dt.strftime("%Y-%m-%d")
-    history_dict = price_history.to_dict(orient="records")
+    # Normalize price history so all tickers start at 1.0
+    normalized = prices / prices.iloc[0]
+
+    # Reset index and format Date for JSON serialization
+    normalized = normalized.reset_index()
+    normalized["Date"] = normalized["Date"].dt.strftime("%Y-%m-%d")
+    history_dict = normalized.to_dict(orient="records")
 
     return {
         **result,
         "price_history": history_dict
     }
+
 
