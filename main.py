@@ -27,4 +27,14 @@ class OptimizeRequest(BaseModel):
 def optimize(req: OptimizeRequest):
     prices = fetch_price_data(req.tickers)
     result = optimize_portfolio(prices, req.risk_level)
-    return result
+
+    # Convert price history DataFrame to dict (for JSON serialization)
+    price_history = prices.reset_index()
+    price_history["Date"] = price_history["Date"].dt.strftime("%Y-%m-%d")
+    history_dict = price_history.to_dict(orient="records")
+
+    return {
+        **result,
+        "price_history": history_dict
+    }
+
