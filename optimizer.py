@@ -7,17 +7,17 @@ def optimize_portfolio(price_df, risk_level="medium"):
 
     ef = EfficientFrontier(mu, S)
 
-    # Enforce that all tickers get at least a small allocation (optional)
-    min_allocation = 0.05
-    ef.add_constraint(lambda w: w >= min_allocation)
-
-    # Set risk preference (after adding constraints)
-    if risk_level == "low":
-        weights = ef.efficient_risk(target_volatility=0.10)
-    elif risk_level == "medium":
-        weights = ef.efficient_risk(target_volatility=0.15)
-    else:
-        weights = ef.max_sharpe()
+    # Choose optimization based on risk preference
+    try:
+        if risk_level == "low":
+            weights = ef.efficient_risk(target_volatility=0.10)
+        elif risk_level == "medium":
+            weights = ef.efficient_risk(target_volatility=0.15)
+        else:
+            weights = ef.max_sharpe()
+    except ValueError as e:
+        print("[ERROR] Optimization failed:", e)
+        raise
 
     cleaned_weights = ef.clean_weights()
     performance = ef.portfolio_performance(verbose=False)
@@ -28,9 +28,3 @@ def optimize_portfolio(price_df, risk_level="medium"):
         "expected_volatility": performance[1],
         "sharpe_ratio": performance[2],
     }
-
-def export_weights_to_csv(weights_dict, filename="optimized_weights.csv"):
-    df = pd.DataFrame(list(weights_dict.items()), columns=["Ticker", "Weight"])
-    df["Weight"] = (df["Weight"] * 100).round(2)
-    df.to_csv(filename, index=False)
-    print(f"[INFO] Exported optimized weights to '{filename}'")
