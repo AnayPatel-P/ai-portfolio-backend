@@ -45,3 +45,27 @@ def export_returns_to_csv(returns_df, filename="biweekly_returns.csv"):
     returns_df.index = returns_df.index.strftime('%Y-%m-%d')  # Format index as string dates
     returns_df.to_csv(filename)
     print(f"[INFO] Exported biweekly returns to '{filename}'")
+
+def generate_recommended_tickers(risk_level: str, universe: list[str], top_n: int = 10):
+    """
+    Dynamically selects top N tickers from a universe based on annualized returns,
+    tailored by risk level (low/medium/high).
+    """
+    price_data = fetch_price_data(universe)
+    stats = calculate_return_stats(price_data)
+    returns = stats["annualized_returns"]
+    volatility = stats["annualized_volatility"]
+
+    # Adjust based on risk level
+    if risk_level == "low":
+        score = returns / (volatility + 1e-6)  # risk-adjusted (Sharpe-like)
+    elif risk_level == "medium":
+        score = returns
+    elif risk_level == "high":
+        score = returns * volatility  # aggressive blend
+    else:
+        raise ValueError("Invalid risk level. Choose from low, medium, high.")
+
+    recommended = score.sort_values(ascending=False).head(top_n).index.tolist()
+    print(f"[INFO] Recommended tickers for {risk_level} risk: {recommended}")
+    return recommended
