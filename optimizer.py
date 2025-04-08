@@ -7,7 +7,10 @@ def optimize_portfolio(price_df, risk_level="medium"):
 
     ef = EfficientFrontier(mu, S)
 
-    # Choose optimization based on risk preference
+    # Optional: Enforce minimum allocation
+    min_allocation = 0.05
+    ef.add_constraint(lambda w: w >= min_allocation)
+
     try:
         if risk_level == "low":
             weights = ef.efficient_risk(target_volatility=0.10)
@@ -16,8 +19,10 @@ def optimize_portfolio(price_df, risk_level="medium"):
         else:
             weights = ef.max_sharpe()
     except ValueError as e:
-        print("[ERROR] Optimization failed:", e)
-        raise
+        print(f"[ERROR] Optimization failed: {e}")
+        # Fallback to max_sharpe if risk level fails
+        ef = EfficientFrontier(mu, S)  # re-init for clean constraints
+        weights = ef.max_sharpe()
 
     cleaned_weights = ef.clean_weights()
     performance = ef.portfolio_performance(verbose=False)
